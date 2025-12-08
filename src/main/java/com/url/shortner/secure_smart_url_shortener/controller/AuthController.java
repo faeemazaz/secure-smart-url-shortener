@@ -1,5 +1,7 @@
 package com.url.shortner.secure_smart_url_shortener.controller;
 
+import com.url.shortner.secure_smart_url_shortener.dto.LoginRequest;
+import com.url.shortner.secure_smart_url_shortener.dto.LoginResponse;
 import com.url.shortner.secure_smart_url_shortener.entity.Users;
 import com.url.shortner.secure_smart_url_shortener.service.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,5 +23,8 @@ public class AuthController {
         return ResponseEntity.ok().body(authService.registerUser(user));
     }
 
-
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponse> loginUser(@RequestBody LoginRequest request) {
+        return ResponseEntity.ok(authService.loginUser(request));
+    }
 }
