@@ -42,7 +42,7 @@ public class WebSecurityConfig {
                 .authorizeHttpRequests(req -> req
                         .requestMatchers("/auth/signup", "/auth/login").permitAll()
                         .anyRequest().authenticated());
-        
+
         http.addFilterBefore(authenticationJwtTokenFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
