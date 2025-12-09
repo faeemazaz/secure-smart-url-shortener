@@ -1,8 +1,11 @@
 package com.url.shortner.secure_smart_url_shortener.exception;
 
+import org.apache.coyote.BadRequestException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.FieldError;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -15,6 +18,8 @@ import java.util.Map;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
+    Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<Map<String, Object>> handleResponseStatusException(ResponseStatusException ex) {
         Map<String, Object> body = new HashMap<>();
@@ -25,34 +30,50 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler({IllegalArgumentException.class, NullPointerException.class})
-    public ResponseEntity<Map<String, Object>> handleBadRequest(Exception ex) {
-        Map<String, Object> body = new HashMap<>();
-        body.put("timestamp", Instant.now());
-        body.put("status", HttpStatus.BAD_REQUEST.value());
-        body.put("error", ex.getMessage());
-        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    public ResponseEntity<ErrorResponse<?>> handleBadRequest(Exception ex) {
+        ErrorResponse er = new ErrorResponse(HttpStatus.BAD_REQUEST.toString(), ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(er);
     }
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, Object>> handleGlobalException(Exception ex) {
-        Map<String, Object> body = new HashMap<>();
-        body.put("timestamp", Instant.now());
-        body.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
-        body.put("error", ex.getMessage());
-        return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<ErrorResponse<?>> handleInvalidCredentials(InvalidCredentialsException ex) {
+        ErrorResponse er = new ErrorResponse(HttpStatus.FORBIDDEN.toString(), ex.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(er);
+    }
+
+    @ExceptionHandler(UnAuthorizedException.class)
+    public ResponseEntity<ErrorResponse<?>> handleInvalidCredentials(UnAuthorizedException ex) {
+        ErrorResponse er = new ErrorResponse(HttpStatus.UNAUTHORIZED.toString(), ex.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(er);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse<?>> handleHttpMessageNotReadable(HttpMessageNotReadableException ex) {
+
+        String message = "Invalid request payload";
+
+        Throwable cause = ex.getMostSpecificCause();
+
+        if (cause instanceof IllegalArgumentException) {
+            String causeMessage = cause.getMessage();
+            log.info("Cause message {}", causeMessage);
+            if (causeMessage.startsWith("Role")) {
+                message = "Invalid role provided. Only ADMIN, USER are allowed!";
+            } else if (causeMessage.startsWith("AccessType")) {
+                message = "Invalid access type provided. Only PUBLIC, PRIVATE, ROLE_BASED are allowed!";
+            } else {
+                message = causeMessage;
+            }
+        }
+
+        ErrorResponse er = new ErrorResponse(HttpStatus.BAD_REQUEST.toString(), message);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(er);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, Object>> handleMethodArgumentNotValid(MethodArgumentNotValidException ex) {
-        Map<String, Object> body = new HashMap<>();
-        body.put("timestamp", Instant.now());
-        body.put("status", HttpStatus.BAD_REQUEST.value());
-
-        Map<String, String> errors = new HashMap<>();
-        ex.getBindingResult().getFieldErrors().stream().map(e -> body.put(e.getField(), e.getDefaultMessage())).toList();
-
-        body.put("errors", errors);
-        body.put("error", "Validation failed");
-        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    public ResponseEntity handleMethodArgumentNotValid(MethodArgumentNotValidException ex) {
+        String msg = ex.getBindingResult().getFieldError().getDefaultMessage();
+        ErrorResponse er = new ErrorResponse(ex.getStatusCode().toString(), msg);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(er);
     }
 }

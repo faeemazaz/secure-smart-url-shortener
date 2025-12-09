@@ -3,6 +3,8 @@ package com.url.shortner.secure_smart_url_shortener.service.impl;
 import com.url.shortner.secure_smart_url_shortener.dto.LoginRequest;
 import com.url.shortner.secure_smart_url_shortener.dto.LoginResponse;
 import com.url.shortner.secure_smart_url_shortener.entity.Users;
+import com.url.shortner.secure_smart_url_shortener.enums.Role;
+import com.url.shortner.secure_smart_url_shortener.exception.InvalidCredentialsException;
 import com.url.shortner.secure_smart_url_shortener.repo.UserRepository;
 import com.url.shortner.secure_smart_url_shortener.security.CustomUserDetailsService;
 import com.url.shortner.secure_smart_url_shortener.security.JwtUtill;
@@ -34,10 +36,23 @@ public class AuthServiceImpl implements AuthService {
     private JwtUtill jwtUtil;
 
     @Override
-    public String registerUser(Users user) {
+    public String registerUser(Users user) throws Exception {
         if(userRepo.findByEmail(user.getEmail()).isPresent()) {
             throw new IllegalArgumentException("Email already exists");
         }
+
+        if(user.getEmail().isEmpty()) {
+            throw new IllegalArgumentException("Email should not be empty");
+        }
+
+        if(user.getPassword().isEmpty()) {
+            throw new IllegalArgumentException("Password should not be empty");
+        }
+
+        if(user.getRole().toString().isEmpty()) {
+            throw new IllegalArgumentException("You have to mention user role ADMIN/USER");
+        }
+
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         userRepo.save(user);
         return "User Inserted Successfully!!";
@@ -46,18 +61,23 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public LoginResponse loginUser(LoginRequest request) {
-        // Authenticate user using email and password
-        Authentication auth = authManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.email(), request.password())
-        );
 
-        // Load user details
-        UserDetails userDetails = userDetailsService.loadUserByUsername(request.email());
+        try {
+            // Authenticate user using email and password
+            Authentication auth = authManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+            );
 
-        // Generate JWT token
-        String token = jwtUtil.generateToken(userDetails);
+            // Load user details
+            UserDetails userDetails = userDetailsService.loadUserByUsername(request.getEmail());
 
-        return new LoginResponse(token, userDetails.getUsername());
+            // Generate JWT token
+            String token = jwtUtil.generateToken(userDetails);
+
+            return new LoginResponse(token, userDetails.getUsername());
+        } catch (Exception e) {
+            throw new InvalidCredentialsException("Invalid email or password");
+        }
     }
 
 }

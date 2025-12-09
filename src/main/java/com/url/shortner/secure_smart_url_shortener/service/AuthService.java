@@ -6,7 +6,7 @@ import com.url.shortner.secure_smart_url_shortener.entity.Users;
 import org.springframework.http.ResponseEntity;
 
 public interface AuthService {
-    public String registerUser(Users user);
+    public String registerUser(Users user) throws Exception;
 
     public LoginResponse loginUser(LoginRequest request);
 }

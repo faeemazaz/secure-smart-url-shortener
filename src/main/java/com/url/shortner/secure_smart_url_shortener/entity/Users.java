@@ -2,6 +2,8 @@ package com.url.shortner.secure_smart_url_shortener.entity;
 
 import com.url.shortner.secure_smart_url_shortener.enums.Role;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 import java.time.Instant;
 
@@ -13,11 +15,14 @@ public class Users {
     private Long userId;
 
     @Column(unique=true)
+    @NotNull(message = "Please enter your email!!")
     private String email;
 
+    @NotNull(message = "Please enter password!!")
     private String password;
 
     @Enumerated(EnumType.STRING)
+    @NotNull(message = "Please select the role!!")
     private Role role;
 
     private Instant createdAt = Instant.now();

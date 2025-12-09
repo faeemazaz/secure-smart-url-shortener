@@ -20,6 +20,9 @@ import org.springframework.stereotype.Component;
 public class WebSecurityConfig {
 
     @Autowired
+    private AuthEntryPointJwt unauthorizedHandler;
+
+    @Autowired
     private AuthTokenFilter authenticationJwtTokenFilter;
 
     @Bean
@@ -38,6 +41,7 @@ public class WebSecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(c -> c.disable())
+                .exceptionHandling(ex -> ex.authenticationEntryPoint(unauthorizedHandler))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(req -> req
                         .requestMatchers("/auth/signup", "/auth/login").permitAll()

@@ -42,14 +42,14 @@ public class UrlRecordServiceImpl implements UrlRecordService {
                 !(request.getAccessType().toString().equalsIgnoreCase("PUBLIC") ||
                         request.getAccessType().toString().equalsIgnoreCase("PRIVATE") ||
                         request.getAccessType().toString().equalsIgnoreCase("ROLE_BASED"))) {
-            throw new ResponseStatusException("Invalid accessType. Allowed values: PUBLIC, PRIVATE, ROLE_BASED");
+            throw new IllegalArgumentException("Invalid accessType. Allowed values: PUBLIC, PRIVATE, ROLE_BASED");
         }
 
         // Validate allowedRole only if accessType is PRIVATE or ROLE_BASED
         if (request.getAllowedRole() == null ||
                 !(request.getAllowedRole().toString().equalsIgnoreCase("USER") ||
                         request.getAllowedRole().toString().equalsIgnoreCase("ADMIN"))) {
-            throw new ResponseStatusException("Invalid allowedRole. Allowed values: USER, ADMIN");
+            throw new IllegalArgumentException("Invalid allowedRole. Allowed values: USER, ADMIN");
         }
 
         // save url shorten data
