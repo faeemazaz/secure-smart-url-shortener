@@ -4,7 +4,7 @@ import com.url.shortner.secure_smart_url_shortener.constant.UtilityFields;
 import com.url.shortner.secure_smart_url_shortener.dto.UrlRecordRequest;
 import com.url.shortner.secure_smart_url_shortener.dto.UrlRecordResponse;
 import com.url.shortner.secure_smart_url_shortener.entity.UrlRecord;
-import com.url.shortner.secure_smart_url_shortener.exception.HttpMessageNotReadableException;
+import com.url.shortner.secure_smart_url_shortener.exception.ResponseStatusException;
 import com.url.shortner.secure_smart_url_shortener.repo.UrlRecordRepo;
 import com.url.shortner.secure_smart_url_shortener.repo.UserRepository;
 import com.url.shortner.secure_smart_url_shortener.service.UrlRecordService;
@@ -42,14 +42,14 @@ public class UrlRecordServiceImpl implements UrlRecordService {
                 !(request.getAccessType().toString().equalsIgnoreCase("PUBLIC") ||
                         request.getAccessType().toString().equalsIgnoreCase("PRIVATE") ||
                         request.getAccessType().toString().equalsIgnoreCase("ROLE_BASED"))) {
-            throw new HttpMessageNotReadableException("Invalid accessType. Allowed values: PUBLIC, PRIVATE, ROLE_BASED");
+            throw new ResponseStatusException("Invalid accessType. Allowed values: PUBLIC, PRIVATE, ROLE_BASED");
         }
 
         // Validate allowedRole only if accessType is PRIVATE or ROLE_BASED
         if (request.getAllowedRole() == null ||
                 !(request.getAllowedRole().toString().equalsIgnoreCase("USER") ||
                         request.getAllowedRole().toString().equalsIgnoreCase("ADMIN"))) {
-            throw new HttpMessageNotReadableException("Invalid allowedRole. Allowed values: USER, ADMIN");
+            throw new ResponseStatusException("Invalid allowedRole. Allowed values: USER, ADMIN");
         }
 
         // save url shorten data

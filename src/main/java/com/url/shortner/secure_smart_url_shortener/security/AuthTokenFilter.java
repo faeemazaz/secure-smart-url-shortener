@@ -8,6 +8,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -16,6 +17,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 
@@ -46,8 +48,7 @@ public class AuthTokenFilter extends OncePerRequestFilter {
                 // PRIVATE or ROLE_BASED → JWT required
                 String token = parseJwt(request);
                 if (token == null || token.isBlank()) {
-                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "JWT token required");
-                    return;
+                    throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
                 }
 
                 // Validate JWT
@@ -66,8 +67,7 @@ public class AuthTokenFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(authentication);
 
                 } catch (Exception e) {
-                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid token");
-                    return;
+                    throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
                 }
             }
         } else {
@@ -98,7 +98,7 @@ public class AuthTokenFilter extends OncePerRequestFilter {
                 }
 
             } catch (Exception e) {
-                e.getStackTrace();
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
             }
         }
 
