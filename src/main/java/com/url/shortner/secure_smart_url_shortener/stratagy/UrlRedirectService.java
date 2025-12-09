@@ -3,11 +3,15 @@ package com.url.shortner.secure_smart_url_shortener.stratagy;
 import com.url.shortner.secure_smart_url_shortener.entity.UrlRecord;
 import com.url.shortner.secure_smart_url_shortener.repo.UrlRecordRepo;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.Map;
 
+@Service
 public class UrlRedirectService {
 
     @Autowired
@@ -22,19 +26,19 @@ public class UrlRedirectService {
 
         // If expiry time is present and current time is exceed expiry time
         if (record.getExpiryTime() != null && Instant.now().isAfter(record.getExpiryTime())) {
-            throw new RuntimeException("URL expired");
+            throw new ResponseStatusException(HttpStatus.GONE,"URL expired");
         }
 
         // if click reached max count
         if (record.getMaxClicks() != null && record.getClickCount() >= record.getMaxClicks()) {
-            throw new RuntimeException("Max clicks exceeded");
+            throw new ResponseStatusException(HttpStatus.GONE,"Max clicks exceeded");
         }
 
         // Create object of PUBLIC/PRIVATE/ROLE_BASED based on user selected access type
         IUrlAccessStrategy strategy = strategyMap.get(record.getAccessType());
         // if not accessible the requirement
         if (!strategy.isAccessible(record, authentication)) {
-            throw new RuntimeException("Access denied");
+            throw new ResponseStatusException(HttpStatus.GONE, "Access denied");
         }
 
         // If strategy is matched then increament count because bean is created
