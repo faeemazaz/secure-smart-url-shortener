@@ -30,27 +30,15 @@ public class UrlRecordServiceImpl implements UrlRecordService {
 
         // fetch login user id
         String email = authentication.getName();
-        Long userId = userRepository.findByEmail(email).orElseThrow(() -> new IllegalArgumentException("User not found")).getUserId();
+        Long userId = userRepository.findByEmail(email).orElseThrow(() ->
+                new IllegalArgumentException("User not found")).getUserId();
 
         // generate unique code
         String shortCode = generateShortUrl();
 
         // calculate expiry time
-        Instant expiryTime = request.getExpiryTime() != null ? Instant.now().plus(Duration.ofMinutes(request.getExpiryTime())) : null;
-
-        if (request.getAccessType() == null ||
-                !(request.getAccessType().toString().equalsIgnoreCase("PUBLIC") ||
-                        request.getAccessType().toString().equalsIgnoreCase("PRIVATE") ||
-                        request.getAccessType().toString().equalsIgnoreCase("ROLE_BASED"))) {
-            throw new IllegalArgumentException("Invalid accessType. Allowed values: PUBLIC, PRIVATE, ROLE_BASED");
-        }
-
-        // Validate allowedRole only if accessType is PRIVATE or ROLE_BASED
-        if (request.getAllowedRole() == null ||
-                !(request.getAllowedRole().toString().equalsIgnoreCase("USER") ||
-                        request.getAllowedRole().toString().equalsIgnoreCase("ADMIN"))) {
-            throw new IllegalArgumentException("Invalid allowedRole. Allowed values: USER, ADMIN");
-        }
+        Instant expiryTime = request.getExpiryTime() != null ?
+                Instant.now().plus(Duration.ofMinutes(request.getExpiryTime())) : null;
 
         // save url shorten data
         UrlRecord record = new UrlRecord();
@@ -82,7 +70,7 @@ public class UrlRecordServiceImpl implements UrlRecordService {
                 shortCode.append(chars.charAt(random.nextInt(chars.length())));
             }
 
-            /* if same url not exist in db then condition become false and while loop is closed
+            /* if same url not exist in db then condition become true and while loop is closed
             otherwise generate new shortcode
              */
             if (!urlRecordRepo.existsByShortCode(shortCode.toString())) {

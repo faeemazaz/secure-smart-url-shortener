@@ -2,10 +2,8 @@ package com.url.shortner.secure_smart_url_shortener.security;
 
 import com.url.shortner.secure_smart_url_shortener.entity.UrlRecord;
 import com.url.shortner.secure_smart_url_shortener.enums.AccessType;
-import com.url.shortner.secure_smart_url_shortener.exception.InvalidCredentialsException;
 import com.url.shortner.secure_smart_url_shortener.exception.UnAuthorizedException;
 import com.url.shortner.secure_smart_url_shortener.repo.UrlRecordRepo;
-import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -48,55 +46,60 @@ public class AuthTokenFilter extends OncePerRequestFilter {
             UrlRecord record = urlRecordRepo.findByShortCode(code).orElse(null);
 
             if (record != null && !record.getAccessType().equals(AccessType.PUBLIC.toString())) {
+                // PRIVATE or ROLE_BASED → JWT required
+                String token = parseJwt(request);
+                if (token == null || token.isBlank()) {
+                    throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
+                }
+
+                // Validate JWT
                 try {
-                    String token = parseJwt(request);
-
-                    if (token == null || token.isBlank()) {
-                        throw new UnAuthorizedException("Missing token!");
-                    }
-
-                    // Validate JWT
                     String username = jwtUtils.extractUsername(token);
                     UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
-                    if (token == null || !jwtUtils.validateJwtToken(token, userDetails)) {
-                        throw new UnAuthorizedException("Invalid token!!");
+                    if (!jwtUtils.validateJwtToken(token, userDetails)) {
+                        response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid token");
+                        return;
                     }
 
                     authentication = new UsernamePasswordAuthenticationToken(
                             userDetails, null, userDetails.getAuthorities()
                     );
                     SecurityContextHolder.getContext().setAuthentication(authentication);
-                } catch (JwtException | IllegalArgumentException ex) {
-                    throw new UnAuthorizedException("Invalid token!!");
+
+                } catch (Exception e) {
+                    throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
                 }
             }
         } else {
-
             try {
                 // Extracted token
                 String token = parseJwt(request);
 
-                if (token == null || token.isBlank()) {
-                    throw new UnAuthorizedException("Missing token!");
+                // Only process JWT if token exists
+                if (token != null && !token.isBlank()) {
+                    // Extract username from token for load user
+                    String username = jwtUtils.extractUsername(token);
+
+                    // Load user details from DB
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+
+                    // Check token is validated based on extracted token and userDetail
+                    if (jwtUtils.validateJwtToken(token, userDetails)) {
+                        // Create authentication object
+                        authentication =
+                                new UsernamePasswordAuthenticationToken(
+                                        userDetails,
+                                        null,
+                                        userDetails.getAuthorities()
+                                );
+//                        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                        SecurityContextHolder.getContext().setAuthentication(authentication);
+                    }
                 }
 
-                String username = jwtUtils.extractUsername(token);
-                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-
-                if (token == null || !jwtUtils.validateJwtToken(token, userDetails)) {
-                    throw new UnAuthorizedException("Invalid token!!");
-                }
-                // Create authentication object
-                authentication =
-                        new UsernamePasswordAuthenticationToken(
-                                userDetails,
-                                null,
-                                userDetails.getAuthorities()
-                        );
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-            } catch (JwtException | IllegalArgumentException ex) {
-                throw new UnAuthorizedException("Invalid token!!");
+            } catch (Exception e) {
+                throw new UnAuthorizedException("Not authenticated");
             }
         }
 

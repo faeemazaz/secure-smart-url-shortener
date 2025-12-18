@@ -9,7 +9,7 @@ public class LoginRequest {
     @Email(message = "Invalid email!!")
     String email;
 
-    @NotBlank(message = "Password enter your password")
+    @NotBlank(message = "Password enter your password ")
     String password;
 
     public LoginRequest(String email, String password) {
